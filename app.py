@@ -121,12 +121,10 @@ if not filtered.empty:
         st.info(
             "Map coordinates are not available for these facilities yet."
         )
-
-       # Facility details
+                # Facility details
     st.subheader("Facility Details")
 
     for _, row in filtered.iterrows():
-
         with st.container(border=True):
 
             st.write(f"### {row['name']}")
@@ -135,7 +133,6 @@ if not filtered.empty:
             st.write(f"Location: {row['address']}")
             st.write(f"Contact: {row['phone']}")
 
-            # Google Maps navigation
             location_query = quote_plus(
                 f"{row['name']}, {row['address']}, {row['city']}"
             )
@@ -148,6 +145,7 @@ if not filtered.empty:
                 "📍 Open in Google Maps",
                 maps_url
             )
+     
 
 else:
     st.warning("No matching facilities found.")
