@@ -19,43 +19,50 @@ st.write(
 # Load location data
 @st.cache_data
 def load_data():
-    return pd.read_csv("data.csv")
+    df = pd.read_csv("data.csv")
+
+    # Convert coordinates into numeric values
+    df["latitude"] = pd.to_numeric(
+        df["latitude"], errors="coerce"
+    )
+    df["longitude"] = pd.to_numeric(
+        df["longitude"], errors="coerce"
+    )
+
+    return df
+
 
 df = load_data()
 
-# Search
+# Search section
 st.header("🔍 Find Pet Care Services")
 
 search = st.text_input("Search by name, city or address")
 
-# Category filter
 category = st.selectbox(
     "Select Facility Category",
-    [
-        "All",
-        "Hospital",
-        "Clinic",
-        "Medicine Shop"
-    ]
+    ["All", "Hospital", "Clinic", "Medicine Shop"]
 )
 
 filtered = df.copy()
 
+# Category filter
 if category != "All":
     filtered = filtered[
         filtered["category"] == category
     ]
 
+# Search filter
 if search:
     mask = (
-        filtered["name"].str.contains(
-            search, case=False, na=False
+        filtered["name"].fillna("").str.contains(
+            search, case=False
         )
-        | filtered["city"].str.contains(
-            search, case=False, na=False
+        | filtered["city"].fillna("").str.contains(
+            search, case=False
         )
-        | filtered["address"].str.contains(
-            search, case=False, na=False
+        | filtered["address"].fillna("").str.contains(
+            search, case=False
         )
     )
 
@@ -63,48 +70,58 @@ if search:
 
 # Results
 st.header("📍 Available Pet Care Locations")
-
 st.write(f"Found {len(filtered)} locations.")
 
 if not filtered.empty:
 
-    # Interactive map
-    center = [
-        filtered["latitude"].mean(),
-        filtered["longitude"].mean()
-    ]
-
-    m = folium.Map(
-        location=center,
-        zoom_start=13
+    # Only use facilities with valid coordinates
+    map_data = filtered.dropna(
+        subset=["latitude", "longitude"]
     )
 
-    for _, row in filtered.iterrows():
+    if not map_data.empty:
 
-        popup = f"""
-        <b>{row['name']}</b><br>
-        Category: {row['category']}<br>
-        City: {row['city']}<br>
-        Address: {row['address']}<br>
-        Phone: {row['phone']}
-        """
+        center = [
+            map_data["latitude"].mean(),
+            map_data["longitude"].mean()
+        ]
 
-        folium.Marker(
-            location=[
-                row["latitude"],
-                row["longitude"]
-            ],
-            popup=popup,
-            tooltip=row["name"]
-        ).add_to(m)
+        m = folium.Map(
+            location=center,
+            zoom_start=13
+        )
 
-    st_folium(
-        m,
-        width=None,
-        height=500
-    )
+        for _, row in map_data.iterrows():
 
-    # Facility information
+            popup = f"""
+            <b>{row['name']}</b><br>
+            Category: {row['category']}<br>
+            City: {row['city']}<br>
+            Address: {row['address']}<br>
+            Phone: {row['phone']}
+            """
+
+            folium.Marker(
+                location=[
+                    row["latitude"],
+                    row["longitude"]
+                ],
+                popup=popup,
+                tooltip=row["name"]
+            ).add_to(m)
+
+        st_folium(
+            m,
+            width=None,
+            height=500
+        )
+
+    else:
+        st.info(
+            "Map coordinates are not available for these facilities yet."
+        )
+
+    # Facility details
     st.subheader("Facility Details")
 
     for _, row in filtered.iterrows():
@@ -113,6 +130,7 @@ if not filtered.empty:
 
             st.write(f"### {row['name']}")
             st.write(f"Category: {row['category']}")
+            st.write(f"City: {row['city']}")
             st.write(f"Location: {row['address']}")
             st.write(f"Contact: {row['phone']}")
 
@@ -126,6 +144,5 @@ st.caption(
 )
 
 st.info(
-    "Sample locations are for demonstration only. "
-    "Verify facility details before visiting."
+    "Facility information should be verified before visiting."
 )
