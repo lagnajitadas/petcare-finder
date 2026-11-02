@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import folium
+from urllib.parse import quote_plus
 from streamlit_folium import st_folium
 
 st.set_page_config(
@@ -121,7 +122,7 @@ if not filtered.empty:
             "Map coordinates are not available for these facilities yet."
         )
 
-    # Facility details
+       # Facility details
     st.subheader("Facility Details")
 
     for _, row in filtered.iterrows():
@@ -133,6 +134,20 @@ if not filtered.empty:
             st.write(f"City: {row['city']}")
             st.write(f"Location: {row['address']}")
             st.write(f"Contact: {row['phone']}")
+
+            # Google Maps navigation
+            location_query = quote_plus(
+                f"{row['name']}, {row['address']}, {row['city']}"
+            )
+
+            maps_url = (
+                f"https://www.google.com/maps/search/?api=1&query={location_query}"
+            )
+
+            st.link_button(
+                "📍 Open in Google Maps",
+                maps_url
+            )
 
 else:
     st.warning("No matching facilities found.")
